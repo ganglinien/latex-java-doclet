@@ -1,0 +1,10 @@
+# project and editor files
+.idea/
+*.iml
+.vscode/
+
+# build files
+target/
+
+# macOS
+.DS_Store

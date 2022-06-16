@@ -7,13 +7,13 @@ import javax.lang.model.element.Element;
 
 public abstract class AbstractExporter<T extends Element> {
     
-    private final BufferedWriter bufferedWriter;
+    private final BufferedLatexWriter bufferedWriter;
 
-    public AbstractExporter(BufferedWriter bufferedWriter) {
+    public AbstractExporter(BufferedLatexWriter bufferedWriter) {
         this.bufferedWriter = bufferedWriter;
     }
 
-    protected BufferedWriter getBufferedWriter() {
+    protected BufferedLatexWriter getBufferedWriter() {
         return this.bufferedWriter;
     }
 

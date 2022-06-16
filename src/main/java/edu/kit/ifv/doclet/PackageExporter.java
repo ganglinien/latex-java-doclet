@@ -9,23 +9,18 @@ import javax.lang.model.element.TypeElement;
 
 public class PackageExporter extends AbstractExporter<PackageElement> {
 
-    public PackageExporter(BufferedWriter bufferedWriter) {
+    public PackageExporter(BufferedLatexWriter bufferedWriter) {
         super(bufferedWriter);
     }
 
     @Override
     public void export(PackageElement element) throws IOException {
-        getBufferedWriter().append(String.format(
-                """
-                \\subsection{%s}
-                %s
-
-                """,
-                element.getQualifiedName(),
-                DocletUtils.comment(element) != null
-                    ? DocletUtils.comment(element) 
-                    : "\\textit{No description}"
-            ));
+        getBufferedWriter()
+                .append(JavadocFormat.stylePackageHeading(element.getQualifiedName()))
+                .append(System.lineSeparator())
+                .append(JavadocFormat.comment(element) != null
+                        ? JavadocFormat.comment(element) : "\\textit{No description}")
+                .append(System.lineSeparator());
 
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (enclosedElement instanceof TypeElement typeElement) {

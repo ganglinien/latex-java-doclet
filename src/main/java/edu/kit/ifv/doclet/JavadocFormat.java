@@ -54,19 +54,19 @@ public class JavadocFormat {
                 // translates to double newlines (line break) in LaTeX.
                 .replaceAll(
                         "(@[a-zA-Z]*)(.*)",
-                        "\\\\textbf{\\\\textcolor{doclet-javadoc-annotation}{$1}}\s$2\n"
+                        "\\\\keyword{$1}\s$2\n"
                 );
     }
 
     public static String stylePackageHeading(CharSequence qualifiedName) {
         return String.format("""
-                \\subsection{\\texttt{\\protect\\textcolor{doclet-javadoc-annotation}{package}} %s}
+                \\subsection{\\keyword{package} %s}
                 """, qualifiedName);
     }
 
     public static String styleClassHeading(CharSequence type, CharSequence qualifiedName) {
         return String.format("""
-                \\subsubsection{\\texttt{\\protect\\textcolor{doclet-javadoc-annotation}{%s}} %s}
+                \\subsubsection{\\keyword{%s} %s}
                 """,
                 type,
                 qualifiedName

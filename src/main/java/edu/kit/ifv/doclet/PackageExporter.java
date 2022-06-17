@@ -19,7 +19,7 @@ public class PackageExporter extends AbstractExporter<PackageElement> {
                 .append(JavadocFormat.stylePackageHeading(element.getQualifiedName()))
                 .append(System.lineSeparator())
                 .append(JavadocFormat.comment(element) != null
-                        ? JavadocFormat.comment(element) : "\\textit{No description}")
+                        ? JavadocFormat.comment(element) : "\\textit{Keine Beschreibung}")
                 .append(System.lineSeparator());
 
         for (Element enclosedElement : element.getEnclosedElements()) {

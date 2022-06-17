@@ -2,42 +2,65 @@ package edu.kit.ifv.doclet.types;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 
 import edu.kit.ifv.doclet.AbstractExporter;
 import edu.kit.ifv.doclet.BufferedLatexWriter;
 import edu.kit.ifv.doclet.JavadocFormat;
 
-public class EnumTypeExporter extends AbstractExporter<TypeElement> {
+public class EnumTypeExporter extends ClassTypeExporter {
 
     public EnumTypeExporter(BufferedLatexWriter bufferedWriter) {
         super(bufferedWriter);
     }
 
     @Override
-    public void export(TypeElement element) throws IOException {
-        getBufferedWriter()
-                .append(JavadocFormat.styleClassHeading("enum", element.getQualifiedName()))
-                .append(System.lineSeparator())
-                .append(JavadocFormat.comment(element))
-                .append(System.lineSeparator());
+    protected String typeName() {
+        return "enum";
+    }
 
-        for (Element enclosedElement : element.getEnclosedElements()) {
-            if (enclosedElement instanceof VariableElement variableElement
-                    && variableElement.getKind() == ElementKind.ENUM_CONSTANT) {
-                getBufferedWriter().append(String.format("""
-                        \\paragraph*{%s}
-                        %s
-                        """,
-                        variableElement.getSimpleName(),
-                        JavadocFormat.comment(variableElement))
-                );
-            }
+    @Override
+    protected void exportEnumConstants(TypeElement element) throws IOException {
+        List<VariableElement> enumConstantElements = element.getEnclosedElements().stream()
+                // filter either methods or constructors
+                .filter(enclosedElement -> enclosedElement.getKind() == ElementKind.ENUM_CONSTANT)
+                .map(variableElement -> (VariableElement) variableElement)
+                .toList();
+
+        getBufferedWriter().append("""
+                \\paragraph*{Enum-Konstanten}
+                \\begin{itemize}
+                """);
+
+        if (enumConstantElements.isEmpty()) {
+            getBufferedWriter().append("""
+                        \\item[] \\textit{Enum hat keine Konstanten}
+                    """);
         }
+
+        for (VariableElement enumConstantElement : enumConstantElements) {
+            getBufferedWriter().append(String.format(
+                    """
+                        \\item \\texttt{\\textbf{%s}}
+                                
+                        %s
+                    """,
+                    enumConstantElement.getSimpleName(),
+                    JavadocFormat.comment(enumConstantElement) != null ? JavadocFormat.comment(enumConstantElement) : ""
+            ));
+        }
+
+        getBufferedWriter().append("""
+                \\end{itemize}
+                """);
+    }
+
+    @Override
+    public void export(TypeElement element) throws IOException {
+        super.export(element);
     }
 
 }

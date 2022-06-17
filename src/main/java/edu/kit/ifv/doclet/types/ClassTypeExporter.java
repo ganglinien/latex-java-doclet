@@ -23,10 +23,14 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
     protected void exportAbstractionNote(TypeElement element) throws IOException {
         if (element.getModifiers().contains(Modifier.ABSTRACT)) {
             getBufferedWriter()
-                    .append("\\textit{This class is \\guillemotleft{}abstract\\guillemotright}")
+                    .append("\\textit{Diese Klasse ist \\guillemotleft{}abstract\\guillemotright}")
                     .append(System.lineSeparator())
                     .append(System.lineSeparator());
         }
+    }
+
+    protected void exportEnumConstants(TypeElement element) throws IOException {
+        // template method
     }
 
     protected void exportFields(TypeElement element) throws IOException {
@@ -34,17 +38,17 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                 .filter(enclosedElement -> enclosedElement.getKind() == ElementKind.FIELD)
                 .map(enclosedElement -> (VariableElement) enclosedElement)
                 // filter private elements
-                // .filter(variableElement -> !variableElement.getModifiers().contains(Modifier.PRIVATE))
+                .filter(variableElement -> !variableElement.getModifiers().contains(Modifier.PRIVATE))
                 .toList();
 
         getBufferedWriter().append("""
-                \\paragraph*{Fields}
+                \\paragraph*{Felder}
                 \\begin{itemize}
                 """);
 
         if (fieldElements.isEmpty()) {
             getBufferedWriter().append("""
-                        \\item[] \\textit{Type has no fields}
+                        \\item[] \\textit{Typ hat keine Felder}
                     """);
         }
 
@@ -56,7 +60,7 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                         %s
                     """,
                     parseVisibility(fieldElement),
-                    fieldElement.asType().toString(),
+                    parseMostSignificantName(fieldElement.asType().toString()),
                     fieldElement.getSimpleName(),
                     JavadocFormat.comment(fieldElement) != null ? JavadocFormat.comment(element) : ""
             ));
@@ -67,7 +71,56 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                 """);
     }
 
-    protected String parseVisibility(VariableElement element) {
+    protected void exportMethods(TypeElement element) throws IOException {
+        List<ExecutableElement> executableElements = element.getEnclosedElements().stream()
+                // filter either methods or constructors
+                .filter(enclosedElement -> enclosedElement.getKind() == ElementKind.METHOD
+                        || enclosedElement.getKind() == ElementKind.CONSTRUCTOR)
+                .map(executableElement -> (ExecutableElement) executableElement)
+                // filter private elements
+                .filter(executableElement -> !executableElement.getModifiers().contains(Modifier.PRIVATE))
+                .toList();
+
+        getBufferedWriter().append("""
+                \\paragraph*{Methoden}
+                \\begin{itemize}
+                """);
+
+        if (executableElements.isEmpty()) {
+            getBufferedWriter().append("""
+                        \\item[] \\textit{Typ hat keine Methoden}
+                    """);
+        }
+
+        for (ExecutableElement executableElement : executableElements) {
+            getBufferedWriter().append(String.format(
+                    """
+                        \\item \\texttt{\\keyword{%s} %s \\textbf{%s}(%s)}
+                                
+                        %s
+                    """,
+                    // method visibility as keyword
+                    parseVisibility(executableElement),
+                    // put method return type
+                    parseMostSignificantName(executableElement.getReturnType().toString()),
+                    // put simple method mane
+                    executableElement.getSimpleName(),
+                    // Join all parameters within the appropriate format
+                    executableElement.getParameters().stream()
+                            .map(parameter -> parseMostSignificantName(parameter.asType().toString())
+                                    + " " + parameter.getSimpleName())
+                            .collect(Collectors.joining(", ")),
+                    // add javadoc comment
+                    JavadocFormat.comment(executableElement) != null ? JavadocFormat.comment(element) : ""
+            ));
+        }
+
+        getBufferedWriter().append("""
+                \\end{itemize}
+                """);
+    }
+
+    protected String parseVisibility(Element element) {
         if (element.getModifiers().contains(Modifier.PUBLIC)) {
             return "public";
         } else if (element.getModifiers().contains(Modifier.PROTECTED)) {
@@ -79,6 +132,19 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
         }
     }
 
+    protected String parseMostSignificantName(String fullQualifier) {
+        int genericIndex = fullQualifier.indexOf('<');
+        int mostSignificantTypeDelimiter;
+
+        if (genericIndex >= 0) {
+            mostSignificantTypeDelimiter = fullQualifier.substring(0, genericIndex).lastIndexOf('.');
+        } else {
+            mostSignificantTypeDelimiter = fullQualifier.lastIndexOf('.');
+        }
+
+        return fullQualifier.substring(mostSignificantTypeDelimiter + 1);
+    }
+
     @Override
     public void export(TypeElement element) throws IOException {
         getBufferedWriter()
@@ -87,9 +153,11 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
         exportAbstractionNote(element);
         getBufferedWriter()
                 .append(JavadocFormat.comment(element) != null
-                        ? JavadocFormat.comment(element) : "\\textit{No description}")
+                        ? JavadocFormat.comment(element) : "\\textit{Keine Beschreibung}")
                 .append(System.lineSeparator());
+        exportEnumConstants(element); // enum template method
         exportFields(element);
+        exportMethods(element);
         getBufferedWriter()
                 .append(System.lineSeparator())
                 .append(System.lineSeparator());

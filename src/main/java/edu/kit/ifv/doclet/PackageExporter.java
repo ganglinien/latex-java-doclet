@@ -29,8 +29,12 @@ public class PackageExporter extends AbstractExporter<PackageElement> {
                 new IllegalStateException("Package '" + element.getQualifiedName()
                         + "' has unhandled element of kind: " + enclosedElement.getKind()).printStackTrace();
             }
-
         }
+
+        // insert a page break after each package
+        getBufferedWriter().append("""
+                \\clearpage
+                """);
     }
     
 }

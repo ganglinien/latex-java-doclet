@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.lang.model.element.*;
+import javax.lang.model.type.TypeMirror;
 
+import com.sun.jdi.ClassType;
+import com.sun.source.tree.ClassTree;
 import edu.kit.ifv.doclet.AbstractExporter;
 import edu.kit.ifv.doclet.BufferedLatexWriter;
 import edu.kit.ifv.doclet.JavadocFormat;
@@ -29,6 +32,37 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
         }
     }
 
+    protected void exportInheritance(TypeElement element) throws IOException {
+        if (element.getSuperclass() != null && element.getInterfaces().size() > 0) {
+            getBufferedWriter()
+                    .append(String.format(
+                            "Diese Klasse erweitert \\texttt{%s}",
+                            JavadocFormat.trimTypeQualifier(element.getSuperclass().toString())
+                    ))
+                    .append(" ")
+                    .append(String.format(
+                            "und implementiert \\texttt{%s}.",
+                            element.getInterfaces().stream()
+                                    .map(type -> JavadocFormat.trimTypeQualifier(type.toString()))
+                                    .collect(Collectors.joining(", "))
+                    ));
+        } else if (element.getSuperclass() != null) {
+            getBufferedWriter()
+                    .append(String.format(
+                            "Diese Klasse erweitert \\texttt{%s}.",
+                            JavadocFormat.trimTypeQualifier(element.getSuperclass().toString())
+                    ));
+        } else if (element.getInterfaces().size() > 0) {
+            getBufferedWriter()
+                    .append(String.format(
+                            "Diese Klasse implementiert \\texttt{%s}.",
+                            element.getInterfaces().stream()
+                                    .map(type -> JavadocFormat.trimTypeQualifier(type.toString()))
+                                    .collect(Collectors.joining(", "))
+                    ));
+        }
+    }
+
     protected void exportEnumConstants(TypeElement element) throws IOException {
         // template method
     }
@@ -38,19 +72,18 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                 .filter(enclosedElement -> enclosedElement.getKind() == ElementKind.FIELD)
                 .map(enclosedElement -> (VariableElement) enclosedElement)
                 // filter private elements
-                .filter(variableElement -> !variableElement.getModifiers().contains(Modifier.PRIVATE))
+                .filter(this::shouldBeExported)
                 .toList();
+
+        if (fieldElements.isEmpty()) {
+            // skip when no fields
+            return;
+        }
 
         getBufferedWriter().append("""
                 \\paragraph*{Felder}
                 \\begin{itemize}
                 """);
-
-        if (fieldElements.isEmpty()) {
-            getBufferedWriter().append("""
-                        \\item[] \\textit{Typ hat keine Felder}
-                    """);
-        }
 
         for (VariableElement fieldElement : fieldElements) {
             getBufferedWriter().append(String.format(
@@ -60,9 +93,9 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                         %s
                     """,
                     parseVisibility(fieldElement),
-                    parseMostSignificantName(fieldElement.asType().toString()),
+                    JavadocFormat.trimTypeQualifier(fieldElement.asType().toString()),
                     fieldElement.getSimpleName(),
-                    JavadocFormat.comment(fieldElement) != null ? JavadocFormat.comment(element) : ""
+                    JavadocFormat.comment(fieldElement) != null ? JavadocFormat.comment(fieldElement) : ""
             ));
         }
 
@@ -102,22 +135,26 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                     // method visibility as keyword
                     parseVisibility(executableElement),
                     // put method return type
-                    parseMostSignificantName(executableElement.getReturnType().toString()),
+                    JavadocFormat.trimTypeQualifier(executableElement.getReturnType().toString()),
                     // put simple method mane
                     executableElement.getSimpleName(),
                     // Join all parameters within the appropriate format
                     executableElement.getParameters().stream()
-                            .map(parameter -> parseMostSignificantName(parameter.asType().toString())
+                            .map(parameter -> JavadocFormat.trimTypeQualifier(parameter.asType().toString())
                                     + " " + parameter.getSimpleName())
                             .collect(Collectors.joining(", ")),
                     // add javadoc comment
-                    JavadocFormat.comment(executableElement) != null ? JavadocFormat.comment(element) : ""
+                    JavadocFormat.comment(executableElement) != null ? JavadocFormat.comment(executableElement) : ""
             ));
         }
 
         getBufferedWriter().append("""
                 \\end{itemize}
                 """);
+    }
+
+    protected boolean shouldBeExported(Element element) {
+        return !element.getModifiers().contains(Modifier.PRIVATE) || JavadocFormat.comment(element) != null;
     }
 
     protected String parseVisibility(Element element) {
@@ -132,6 +169,7 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
         }
     }
 
+    @Deprecated
     protected String parseMostSignificantName(String fullQualifier) {
         int genericIndex = fullQualifier.indexOf('<');
         int mostSignificantTypeDelimiter;
@@ -151,6 +189,7 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                 .append(JavadocFormat.styleClassHeading(typeName(), element.getQualifiedName()))
                 .append(System.lineSeparator());
         exportAbstractionNote(element);
+        exportInheritance(element);
         getBufferedWriter()
                 .append(JavadocFormat.comment(element) != null
                         ? JavadocFormat.comment(element) : "\\textit{Keine Beschreibung}")

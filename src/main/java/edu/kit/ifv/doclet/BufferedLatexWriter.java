@@ -3,6 +3,7 @@ package edu.kit.ifv.doclet;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.regex.Pattern;
 
 public class BufferedLatexWriter extends BufferedWriter {
 
@@ -17,11 +18,17 @@ public class BufferedLatexWriter extends BufferedWriter {
     }
 
     private String replaceWithLaTeX(String input) {
-        return input
-                // escape underscores because LaTeX assumes math mode otherwise
-                .replaceAll(
-                        "_",
-                        "\\\\_"
-                );
+        // remove html escape for latex macros
+        input = Pattern.compile("<texonly[\\s\n]*tex=\"(.*)\"[\\s\n]*/?>", Pattern.DOTALL)
+                .matcher(input)
+                .replaceAll("$1");
+
+        // escape underscores because LaTeX assumes math mode otherwise
+        input = input.replaceAll("_", "\\\\_");
+
+        // escape hashtag because LaTeX doesn't allow it in vertical mode
+        input = input.replaceAll("#", "\\\\#");
+
+        return input;
     }
 }

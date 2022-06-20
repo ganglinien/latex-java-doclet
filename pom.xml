@@ -23,6 +23,7 @@
     </dependencies>
 
     <build>
+        <finalName>doclet</finalName>
         <plugins>
             <plugin>
                 <artifactId>exec-maven-plugin</artifactId>

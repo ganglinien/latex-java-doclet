@@ -59,6 +59,13 @@ public class EnumTypeExporter extends ClassTypeExporter {
     }
 
     @Override
+    protected boolean hasSignificantSuperclass(TypeElement element) {
+        // Note: enums can implement interfaces but don't inherit only Enum<Itself>
+        // thus never having any significant superclass
+        return false;
+    }
+
+    @Override
     public void export(TypeElement element) throws IOException {
         super.export(element);
     }

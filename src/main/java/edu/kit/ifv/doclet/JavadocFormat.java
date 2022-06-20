@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
  *
  * <teximage src="img/architecture.png" size=".5\linewidth" caption="Wiederholung: Architektur">
  *
+ * {@link #comment(Element)} and {@link edu.kit.ifv.doclet.types.RecordTypeExporter}
+ *
  * @author Christian Schliz
  */
 public class JavadocFormat {
@@ -57,13 +59,39 @@ public class JavadocFormat {
         );
     }
 
-    private static String applySyntaxHighlighting(String input) {
+    public static String applySyntaxHighlighting(String input) {
         if (Objects.isNull(input)) return null;
+
+        //
+        input = Pattern.compile("[\\s\n]+(@((.*)\n)+)", Pattern.MULTILINE)
+                .matcher(input)
+                .replaceAll("<br><br>$1");
+
+        input = Pattern.compile("[\\s\n]+(@.*)", Pattern.MULTILINE)
+                .matcher(input)
+                .replaceFirst("<br>$1");
+
+        // trim all spaces and newlines into a single space
+        input = Pattern.compile("[\\s\n]+", Pattern.DOTALL)
+                .matcher(input)
+                .replaceAll(" ");
+        // Separate sentences into new line
+        input = Pattern.compile("\\.[\\s\n]+", Pattern.DOTALL)
+                .matcher(input)
+                .replaceAll("\\.\n");
+        // trim whitespace before and after line
+        input = Pattern.compile("\\s*(.*)\\s*\n", Pattern.MULTILINE)
+                .matcher(input)
+                .replaceAll("$1\n");
+
+        input = Pattern.compile("<texexclude[\\s\n]*>(.*)</texexclude>", Pattern.DOTALL)
+                .matcher(input)
+                .replaceAll("");
 
         // first parse html
         input = Pattern.compile("<([^<>]*)(.*)>(.*)</\\1>", Pattern.DOTALL)
                 .matcher(input)
-                .replaceAll("\\\\htmlEscape{$1}{$3}");
+                .replaceAll("\\\\\\\\htmlEscape{$1}{$3}");
 
         input = Pattern.compile("<teximage[\\s\n]*src=\"(.*)\"[\\s\n]*size=\"(.*)\"[\\s\n]*caption=\"(.*)\"[\\s\n]*/?>", Pattern.DOTALL)
                 .matcher(input)
@@ -75,18 +103,26 @@ public class JavadocFormat {
                         \\\\end{figure}
                         """);
 
+        input = Pattern.compile("\\{\\s*@link\\s*#(.*)\\s*}", Pattern.DOTALL)
+                .matcher(input)
+                .replaceAll("\\\\\\\\highlightReference{$1}");
+
+        input = Pattern.compile("\\{\\s*@link\\s*(.*)\\s*}", Pattern.DOTALL)
+                .matcher(input)
+                .replaceAll(matchResult -> "\\\\highlightReference{" + trimTypeQualifier(matchResult.group(1)) + "}");
+
         return input
                 .replaceAll(
-                        "\\{@link #(.*)}",
-                        "\\\\highlightReference{$1}"
-                )
-                .replaceAll(
-                        "<([^<>]*)(.*)>(.*)</\\1>",
-                        "\\\\htmlEscape{$1}{$3}"
-                )
-                .replaceAll(
                         "(<br>|<br/>)",
-                        "\n\n"
+                        "\n"
+                )
+                .replaceAll(
+                        "(<lt>)",
+                        "<"
+                )
+                .replaceAll(
+                        "(<gt>)",
+                        ">"
                 )
                 // style all "@keyword" groups bold and pink
                 // additionally, insert newline so that a single javadoc newline after some @modifier

@@ -27,13 +27,12 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
         if (element.getModifiers().contains(Modifier.ABSTRACT)) {
             getBufferedWriter()
                     .append("\\textit{Diese Klasse ist \\guillemotleft{}abstract\\guillemotright}")
-                    .append(System.lineSeparator())
                     .append(System.lineSeparator());
         }
     }
 
     protected void exportInheritance(TypeElement element) throws IOException {
-        if (element.getSuperclass() != null && element.getInterfaces().size() > 0) {
+        if (hasSignificantSuperclass(element) && element.getInterfaces().size() > 0) {
             getBufferedWriter()
                     .append(String.format(
                             "Diese Klasse erweitert \\texttt{%s}",
@@ -45,13 +44,15 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                             element.getInterfaces().stream()
                                     .map(type -> JavadocFormat.trimTypeQualifier(type.toString()))
                                     .collect(Collectors.joining(", "))
-                    ));
-        } else if (element.getSuperclass() != null) {
+                    ))
+                    .append(System.lineSeparator());
+        } else if (hasSignificantSuperclass(element)) {
             getBufferedWriter()
                     .append(String.format(
                             "Diese Klasse erweitert \\texttt{%s}.",
                             JavadocFormat.trimTypeQualifier(element.getSuperclass().toString())
-                    ));
+                    ))
+                    .append(System.lineSeparator());
         } else if (element.getInterfaces().size() > 0) {
             getBufferedWriter()
                     .append(String.format(
@@ -59,7 +60,8 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
                             element.getInterfaces().stream()
                                     .map(type -> JavadocFormat.trimTypeQualifier(type.toString()))
                                     .collect(Collectors.joining(", "))
-                    ));
+                    ))
+                    .append(System.lineSeparator());
         }
     }
 
@@ -169,6 +171,17 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
         }
     }
 
+    protected boolean hasSignificantSuperclass(TypeElement element) {
+        if (element.getSuperclass() == null || element.getSuperclass().toString() == null) {
+            return false;
+        }
+
+        String qualifier = JavadocFormat.trimTypeQualifier(element.getSuperclass().toString());
+
+        return !qualifier.equalsIgnoreCase("none")
+                && !qualifier.equalsIgnoreCase("Object");
+    }
+
     @Deprecated
     protected String parseMostSignificantName(String fullQualifier) {
         int genericIndex = fullQualifier.indexOf('<');
@@ -191,6 +204,7 @@ public class ClassTypeExporter extends AbstractExporter<TypeElement> {
         exportAbstractionNote(element);
         exportInheritance(element);
         getBufferedWriter()
+                .append(System.lineSeparator())
                 .append(JavadocFormat.comment(element) != null
                         ? JavadocFormat.comment(element) : "\\textit{Keine Beschreibung}")
                 .append(System.lineSeparator());

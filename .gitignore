@@ -8,3 +8,5 @@ target/
 
 # macOS
 .DS_Store
+
+test.sh

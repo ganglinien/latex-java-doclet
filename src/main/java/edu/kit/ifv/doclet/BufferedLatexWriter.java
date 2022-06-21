@@ -19,7 +19,7 @@ public class BufferedLatexWriter extends BufferedWriter {
 
     private String replaceWithLaTeX(String input) {
         // remove html escape for latex macros
-        input = Pattern.compile("<texonly[\\s\n]*tex=\"(.*)\"[\\s\n]*/?>", Pattern.DOTALL)
+        input = Pattern.compile("<texonly[\\s\n]*?tex=\"(.*?)\"[\\s\n]*?/?>", Pattern.DOTALL)
                 .matcher(input)
                 .replaceAll("$1");
 

@@ -13,6 +13,7 @@ import edu.kit.ifv.doclet.PackageExporter;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -93,6 +94,10 @@ public class LatexDoclet implements Doclet {
         
         try {
             this.bufferedWriter = new BufferedLatexWriter(new FileWriter(outputPath, false));
+            this.bufferedWriter.append(String.format("""
+                    %% started generating at: %s
+                    
+                    """, Instant.now().toString()));
         } catch (IOException exception) {
             System.err.println("Error: " + exception.getLocalizedMessage());
             return false;
@@ -105,6 +110,8 @@ public class LatexDoclet implements Doclet {
                 .forEachOrdered(this::consumePackage);
 
         try {
+            this.bufferedWriter.append(String.format("""
+                    %% generated at: %s""", Instant.now().toString()));
             this.bufferedWriter.flush();
         } catch (IOException exception) {
             System.err.println("Error: " + exception.getLocalizedMessage());

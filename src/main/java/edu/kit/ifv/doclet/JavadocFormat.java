@@ -84,9 +84,13 @@ public class JavadocFormat {
                 .matcher(input)
                 .replaceAll("$1\n");
 
-        input = Pattern.compile("<texexclude[\\s\n]*>(.*)</texexclude>", Pattern.DOTALL)
+        input = Pattern.compile("<texexclude[\\s\n]*>(.*?)</texexclude>", Pattern.DOTALL)
                 .matcher(input)
                 .replaceAll("");
+
+        input = Pattern.compile("(<p></p>)")
+                .matcher(input)
+                .replaceAll("\n");
 
         // first parse html
         input = Pattern.compile("<([^<>]*)(.*)>(.*)</\\1>", Pattern.DOTALL)
